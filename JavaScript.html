@@ -1,0 +1,262 @@
+<script src = "https://code.jquery.com/jquery-3.5.1.js" ></script>
+<script src = "https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.2.0/js/bootstrap.bundle.min.js" > </script> 
+<script src = "https://cdn.datatables.net/1.13.3/js/jquery.dataTables.min.js" > </script> 
+<script src = "https://cdn.datatables.net/1.13.3/js/dataTables.bootstrap5.min.js" > </script> 
+<script src = "https://cdn.datatables.net/responsive/2.4.0/js/dataTables.responsive.min.js" > </script> 
+<script src = "https://cdn.datatables.net/responsive/2.4.0/js/responsive.bootstrap5.min.js" > </script>
+
+<script >
+
+/**
+ * Prevent forms from submitting.
+ * */
+
+function preventFormSubmit() {
+    var forms = document.querySelectorAll('form');
+    for (var i = 0; i < forms.length; i++) {
+        forms[i].addEventListener('submit', function(event) {
+            event.preventDefault();
+        });
+    }
+}
+
+window.addEventListener("load", functionInit, true);
+window.addEventListener("beforeunload", falseState, true);
+
+/**
+* INITIALIZE FUNCTIONS ONLOAD
+* */
+
+function functionInit() {
+$('#spinnerModal').modal('show');
+preventFormSubmit();
+getAllData();
+createKotaDropdown();
+};
+
+
+/**
+* HANDLE FORM SUBMISSION
+* */
+
+function handleFormSubmit(formObject) {
+$('#spinnerModal').modal('show');
+google.script.run.withSuccessHandler(createTable).processForm(formObject);
+setTimeout(function() {
+    $('#myModal').modal('hide');
+}, 2000);
+document.getElementById("message").innerHTML = "<div class='alert alert-warning' role='alert'>Data berhasil ditambahkan!.</div>";
+document.getElementById("myForm").reset();
+var oTable = $('#dataTable').dataTable();   
+  // Hide/show the column after initialisation
+oTable.fnSetColumnVis( 0, false );	
+}
+
+
+function refreshApp(newHtml) {
+$('#spinnerModal').modal('show');
+falseState();
+document.open();
+document.write(newHtml);
+document.close();
+$('#myModal').modal('hide');
+}
+
+function falseState() {
+var dtTable = $('#dataTable').DataTable();
+dtTable.state.clear();//Clear State
+dtTable.destroy();//Destroy
+}
+
+/**
+* Clear form when pop-up is closed.  
+* */
+
+function clearForm() {
+document.getElementById("message").innerHTML = "";
+document.getElementById("myForm").reset();
+}
+
+
+/**
+* GET ALL DATA
+* */
+
+function getAllData() {
+//$('#spinnerModal').modal('show');
+//document.getElementById('dataTable').innerHTML = "";
+google.script.run.withSuccessHandler(createTable).getAllData();
+}
+
+/**
+* CREATE THE DATA TABLE
+* */
+
+function createTable(dataArray) {
+$('#spinnerModal').modal('hide');
+if (dataArray) {
+    var result = "<div>" +
+        "<table class='table table-sm' style='font-size:1em'>" +
+        "<thead style='white-space: nowrap'>" +
+        "<tr>" +
+        //Change table headings to match witht he Google Sheet                            
+        "<th scope='col'>ID</th>" +
+        "<th scope='col'>Nama</th>" +
+        "<th scope='col'>Email</th>" +
+        "<th scope='col'>Telpon</th>" +
+        "<th scope='col'>Jenis Kelamin</th>" +
+        "<th scope='col'>Tanggal Lahir</th>" +
+        "<th scope='col'>Kota</th>" +
+        "<th scope='col'>Last Update</th>" +
+        "<th scope='col'>Aksi</th>" +
+        "<th scope='col'></th>" +
+        "</tr>" +
+        "</thead>";
+    for (var i = 0; i < dataArray.length; i++) {
+        result += "<tr>";
+
+        for (var j = 0; j < dataArray[i].length; j++) {
+            result += "<td>" + dataArray[i][j] + "</td>";
+        }
+        result += "<td><i class='fa fa-duotone fa-pen-to-square' data-bs-toggle='modal' data-bs-target='#myModal' onclick='editData(this);'></td>";
+        result += "<td><i class='fa fa-sharp fa-solid fa-trash' onclick='deleteData(this);'></td>";
+        result += "</tr>";
+    }
+    result += "</table></div>";
+    var div = document.getElementById('dataTable');
+    div.innerHTML = result;
+    $(document).ready(function() {
+        $('#dataTable').DataTable({
+            destroy: true,
+            responsive: true,
+            select: true,
+            stateSave: true,
+            ordering:true,
+            order: [[0, 'desc' ]],
+            pageLength: 5,
+            lengthMenu: [
+                [5, 10, 25, 50, 100, -1],
+                ['5', '10', '25', '50', '100', 'All']
+            ],
+            columnDefs: [{
+                    targets: [1, 8, 9],
+                    className: 'all',
+                },
+                {
+                    targets: [0],
+                    visible: false, //hide kolom pertama/0
+                    searchable: true,
+                },
+                {
+                    targets: [3],
+                    className: 'dt-body-center',
+                    "render": function(data, type, row, meta) {
+                        if (type === 'display' && data.length > 5) {
+                            data = '<a href="https://wa.me/62' + data + '?text=' + row[3] + '" target="_blank">' + '<i class="fa-brands fa-whatsapp" style="font-size:20px;color:red"></i>' + '</a>';
+                        }
+                        return data;
+                    }
+                },
+            ]
+        });
+    });
+}
+}
+
+
+/**
+* DELETE DATA
+* */
+
+function deleteData(el) {
+var oTable = $('#dataTable').dataTable();
+// Hide the second column after initialisation
+oTable.fnSetColumnVis(0, true);
+Swal.fire({
+    title: 'Apa kamu yakin?',
+    icon: 'warning',
+    html: `<input type="password" id="password" class="swal2-input" placeholder="Input Password">`,
+    showCancelButton: true,
+    confirmButtonColor: '#3085d6',
+    cancelButtonColor: '#d33',
+    cancelButtonText: 'Batal',
+    confirmButtonText: 'Ya, Hapus data ini!',
+    allowOutsideClick: false,
+    preConfirm: () => {
+        var pass = "123";
+        var password = Swal.getPopup().querySelector('#password').value
+        if (password == pass) {
+            var recordId = el.parentNode.parentNode.cells[0].innerHTML;
+            google.script.run.withSuccessHandler(createTable).deleteData(recordId);
+            oTable.fnSetColumnVis(0, false);
+        } else {
+            Swal.showValidationMessage('Invalid Password')
+        }
+    },
+}).then((result) => {
+    if (result.isConfirmed) {
+        Swal.fire(
+            'Hapus !',
+            'File telah dihapus!',
+            'success',
+        )
+    } else {
+        Swal.fire(
+            'Batal !',
+            'Batal hapus file ini :)',
+            'error',
+        )
+        oTable.fnSetColumnVis(0, false);
+    }
+});
+}
+
+
+//FOR POPULATE FORM------------------------------------------------------------------------------------------------------
+
+//RETRIVE DATA FROM GOOGLE SHEET FOR KOTA DROPDOWN
+function createKotaDropdown() {
+//SUBMIT YOUR DATA RANGE FOR DROPDOWN AS THE PARAMETER
+google.script.run.withSuccessHandler(kotaDropDown).getDropdownListKota("Kota!A1:A");
+}
+
+//POPULATE KOTA DROPDOWNS
+function kotaDropDown(values) { //Ref: https://stackoverflow.com/a/53771955/2391195
+var list = document.getElementById('kota');
+for (var i = 0; i < values.length; i++) {
+    var option = document.createElement("option");
+    option.value = values[i];
+    option.text = values[i];
+    list.appendChild(option);
+}
+}
+
+/** 
+* EDIT DATA
+* https://stackoverflow.com/a/32377357/2391195
+* */
+
+function editData(el) {
+var oTable = $('#dataTable').dataTable();   
+// // Hide/show the column after initialisation
+oTable.fnSetColumnVis( 0, true ); 
+var recordId = el.parentNode.parentNode.cells[0].innerHTML;
+google.script.run.withSuccessHandler(populateForm).getRecordById(recordId);
+}
+
+/** 
+* POPULATE FORM
+* */
+
+function populateForm(records) {
+document.getElementById('RecId').value = records[0][0];
+document.getElementById('nama').value = records[0][1];
+document.getElementById('email').value = records[0][2];
+document.getElementById('telp').value = records[0][3];
+document.getElementById('gender').value = records[0][4];
+document.getElementById('tglLahir').value = records[0][5];
+document.getElementById('kota').value = records[0][6];
+document.getElementById("message").innerHTML = "<div class='alert alert-warning' role='alert'>Update [ID: " + records[0][0] + "]</div>";
+}
+
+</script>

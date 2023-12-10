@@ -1,0 +1,13 @@
+<div class="col" style="margin-top:10px; margin-bottom:-10px">
+    <p class="h4 mb-4 text-center"><strong>CRUD GOOGLE SHEETS</strong></p>
+</div>
+
+<hr>
+<button class="btn btn-primary btn-sm" style="width:100px" type="button" id="tambah" data-bs-toggle='modal' data-bs-target="#myModal">Input</button>
+<button class="btn btn-danger btn-sm" style="width:100px" type="button" id="refresh" onclick ="google.script.run
+      .withSuccessHandler(refreshApp)
+      .getNewHtml()">Refresh</button>
+<hr>
+
+<!-- The Data Table is inserted here by JavaScript ------------------ -->
+<table id="dataTable" class="table table-striped table-bordered nowrap" style="width:100%"></table>
